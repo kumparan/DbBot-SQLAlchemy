@@ -32,6 +32,7 @@ class RobotResultsParser(object):
         self._verbose('- Parsing %s' % xml_file)
         test_run = ExecutionResult(xml_file, include_keywords=self._include_keywords)
         hash_string = self._hash(xml_file)
+        suite_metadata = list(test_run.suite.metadata.values())[0]
         try:
             test_run_id = self._db.insert('test_runs', {
                 'hash': hash_string,
@@ -48,7 +49,7 @@ class RobotResultsParser(object):
             })
         self._parse_errors(test_run.errors.messages, test_run_id)
         self._parse_statistics(test_run.statistics, test_run_id)
-        self._parse_suite(test_run.suite, test_run_id)
+        self._parse_suite(test_run.suite, test_run_id, suite_metadata)
 
     @staticmethod
     def _hash(xml_file):
@@ -86,7 +87,6 @@ class RobotResultsParser(object):
         self._db.insert_or_ignore('tag_status', {
             'test_run_id': test_run_id,
             'name': stat.name,
-            'critical': int(stat.critical),
             'elapsed': getattr(stat, 'elapsed', None),
             'failed': stat.failed,
             'passed': stat.passed
@@ -101,7 +101,7 @@ class RobotResultsParser(object):
             'passed': stat.passed
         })
 
-    def _parse_suite(self, suite, test_run_id, parent_suite_id=None):
+    def _parse_suite(self, suite, test_run_id, suite_metadata, parent_suite_id=None):
         self._verbose('`--> Parsing suite: %s' % suite.name)
         try:
             suite_id = self._db.insert('suites', {
@@ -109,15 +109,17 @@ class RobotResultsParser(object):
                 'xml_id': suite.id,
                 'name': suite.name,
                 'source': suite.source,
-                'doc': suite.doc
+                'doc': suite.doc,
+                'metadata': suite_metadata
             })
         except IntegrityError:
             suite_id = self._db.fetch_id('suites', {
                 'name': suite.name,
-                'source': suite.source
+                'source': suite.source,
+                'metadata': suite_metadata
             })
         self._parse_suite_status(test_run_id, suite_id, suite)
-        self._parse_suites(suite, test_run_id, suite_id)
+        self._parse_suites(suite, test_run_id, suite_metadata, suite_id)
         self._parse_tests(suite.tests, test_run_id, suite_id)
         self._parse_keywords(suite.keywords, test_run_id, suite_id, None)
 
@@ -125,14 +127,14 @@ class RobotResultsParser(object):
         self._db.insert_or_ignore('suite_status', {
             'test_run_id': test_run_id,
             'suite_id': suite_id,
-            'passed': suite.statistics.all.passed,
-            'failed': suite.statistics.all.failed,
+            'passed': suite.statistics.passed,
+            'failed': suite.statistics.failed,
             'elapsed': suite.elapsedtime,
             'status': suite.status
         })
 
-    def _parse_suites(self, suite, test_run_id, parent_suite_id):
-        [self._parse_suite(subsuite, test_run_id, parent_suite_id) for subsuite in suite.suites]
+    def _parse_suites(self, suite, test_run_id, suite_metadata, parent_suite_id):
+        [self._parse_suite(subsuite, test_run_id, suite_metadata, parent_suite_id) for subsuite in suite.suites]
 
     def _parse_tests(self, tests, test_run_id, suite_id):
         [self._parse_test(test, test_run_id, suite_id) for test in tests]

@@ -86,8 +86,9 @@ class DatabaseWriter(object):
             Column('suite_id', Integer, ForeignKey('suites.id')),
             Column('xml_id', String(64), nullable=False),
             Column('name', String(256), nullable=False),
-            Column('source', String(1024)),
-            Column('doc', Text)
+            Column('source', String(512)),
+            Column('doc', Text),
+            Column('metadata', String(1024))
         ), ('name', 'source'))
 
     def _create_table_suite_status(self):
