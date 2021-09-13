@@ -101,7 +101,7 @@ class RobotResultsParser(object):
             'passed': stat.passed
         })
 
-    def _parse_suite(self, suite, test_run_id, suite_metadata, parent_suite_id=None):
+    def _parse_suite(self, suite, test_run_id, suite_metadata=None, parent_suite_id=None):
         self._verbose('`--> Parsing suite: %s' % suite.name)
         try:
             suite_id = self._db.insert('suites', {
