@@ -28,7 +28,7 @@ class RobotResultsParser(object):
         self._include_keywords = include_keywords
         self._db = db
 
-    def xml_to_db(self, xml_file):
+    def xml_to_db(self, xml_file, build_number):
         self._verbose('- Parsing %s' % xml_file)
         test_run = ExecutionResult(xml_file, include_keywords=self._include_keywords)
         hash_string = self._hash(xml_file)
@@ -39,13 +39,15 @@ class RobotResultsParser(object):
                 'imported_at': datetime.utcnow(),
                 'source_file': test_run.source,
                 'started_at': self._format_robot_timestamp(test_run.suite.starttime),
-                'finished_at': self._format_robot_timestamp(test_run.suite.endtime)
+                'finished_at': self._format_robot_timestamp(test_run.suite.endtime),
+                'build_number': build_number
             })
         except IntegrityError:
             test_run_id = self._db.fetch_id('test_runs', {
                 'source_file': test_run.source,
                 'started_at': self._format_robot_timestamp(test_run.suite.starttime),
-                'finished_at': self._format_robot_timestamp(test_run.suite.endtime)
+                'finished_at': self._format_robot_timestamp(test_run.suite.endtime),
+                'build_number': build_number
             })
         self._parse_errors(test_run.errors.messages, test_run_id)
         self._parse_statistics(test_run.statistics, test_run_id)
