@@ -85,7 +85,7 @@ class ReaderOptions(object):
     def dry_run(self):
         return self._options.dry_run
 
-      @property
+    @property
     def build_number(self):
         return self._options.build_number
 
