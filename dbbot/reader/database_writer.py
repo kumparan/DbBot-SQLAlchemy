@@ -52,6 +52,7 @@ class DatabaseWriter(object):
             Column('started_at', DateTime),
             Column('finished_at', DateTime),
             Column('build_number', Integer, nullable=False),
+            Column('branch_repo', String(1024)),
         ), ('hash',))
 
     def _create_table_test_run_status(self):
